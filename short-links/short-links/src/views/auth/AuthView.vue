@@ -43,7 +43,6 @@ import { useRouter } from 'vue-router';
 import { api } from '@/api';
 import type { HTTPValidationError } from '@/api/api';
 import { TheInput, TheButton } from '@/components/helpers';
-import { useAuthStore } from '@/stores/auth';
 
 interface State {
   email: string;
@@ -52,7 +51,6 @@ interface State {
 }
 
 const router = useRouter();
-const authStore = useAuthStore();
 
 const state = reactive<State>({
   email: '',
@@ -62,10 +60,18 @@ const state = reactive<State>({
 
 async function makeAuth(): Promise<void> {
   try {
-    await authStore.makeAuth(state.email, state.password);
+    const response = await api.logInLoginPost({
+      username: state.email,
+      password: state.password,
+    });
+
+    localStorage.setItem('token_type', response.data.token_type);
+    localStorage.setItem('access_token', response.data.access_token);
+
     router.push({ name: 'statistics' });
-  } catch (err) {
-    state.error = 'Ошибка авторизации';
+  } catch (err: any) {
+    state.error = String(err.error.detail);
+    return err;
   }
 }
 

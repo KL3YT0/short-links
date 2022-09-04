@@ -85,7 +85,7 @@
         <div class="flex">
           <div class="w-35 mx-auto">
             <TheButton
-              @click="state.offset--"
+              @click="state.offset--, state.hasMore = true"
               :disabled="state.inProcess || state.offset === 0"
               label="Предыдущая страница"
               variant="primary"
