@@ -174,6 +174,8 @@ async function getShort(): Promise<void> {
       );
 
       state.short = makeLinkFromShort(response.data.short);
+
+      loadPage();
     } catch (err) {
       console.log(err);
     }
