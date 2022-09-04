@@ -19,12 +19,21 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!localStorage.getItem('access_token')
+    && !!localStorage.getItem('token_type');
+
   if (to.name === 'statistics') {
-    const isAuthenticated = !!localStorage.getItem('access_token')
-      && !!localStorage.getItem('token_type');
 
     if (!isAuthenticated) {
       next({ name: 'auth' })
+    }
+
+    next();
+  }
+
+  if (to.name === 'auth' || to.name === 'register') {
+    if (isAuthenticated) {
+      next({ name: 'statistics' })
     }
 
     next();

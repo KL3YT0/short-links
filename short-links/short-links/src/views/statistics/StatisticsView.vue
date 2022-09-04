@@ -38,14 +38,34 @@
       <div class="text-xl text-center text-secondary font-bold">Статистика</div>
       <div class="flex flex-col gap-y-4">
         <div class="grid grid-cols-6 border-b-2 border-primary">
-          <div class="break-all col-span-3 p-2 color-gray text-lg font-bold">
-            Оригинальная ссылка
+          <div
+            @click="changeSortingParams('target')"
+            class="flex items-center gap-x-4 break-all col-span-3 p-2"
+          >
+            <SortBy
+              :sorting-type="state.sort.target"
+              label="Оригинальная ссылка"
+            />
           </div>
-          <div class="col-span-2 p-2 color-gray text-lg font-bold">
-            Сокращенная ссылка
+
+          <div
+            @click="changeSortingParams('short')"
+            class="flex items-center gap-x-4 break-all col-span-2 p-2"
+          >
+            <SortBy
+              :sorting-type="state.sort.short"
+              label="Короткая ссылка"
+            />
           </div>
-          <div class="col-span-1 p-2 color-gray text-lg font-bold">
-            Кол-во переходов
+
+          <div
+            @click="changeSortingParams('counter')"
+            class="flex items-center gap-x-4 break-all col-span-1 p-2"
+          >
+            <SortBy
+              :sorting-type="state.sort.counter"
+              label="Кол-во переходов"
+            />
           </div>
         </div>
 
@@ -65,13 +85,30 @@
           </div>
         </div>
 
-        <div class="w-35 mx-auto">
-          <TheButton
-            @click="loadMore"
-            :disabled="state.inProcess || !state.hasMore"
-            label="Показать еще"
-            variant="primary"
-          />
+        <div class="flex">
+          <div class="w-35 mx-auto">
+            <TheButton
+              @click="state.offset--"
+              :disabled="
+                state.inProcess || state.offset === 0
+              "
+              label="Предыдущая страница"
+              variant="primary"
+            />
+          </div>
+
+          <div class="w-10">
+            <TheInput :model-value="state.offset" :disabled="true" />
+          </div>
+
+          <div class="w-35 mx-auto">
+            <TheButton
+              @click="state.offset++"
+              :disabled="state.inProcess || !state.hasMore"
+              label="Следующая страница"
+              variant="primary"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -81,32 +118,49 @@
 <script setup lang="ts">
 import { api, baseUrl } from '@/api';
 import { onMounted, reactive, watch } from 'vue';
-import { TheInput, TheButton } from '@/components/helpers';
+import { TheInput, TheButton, SortBy } from '@/components/helpers';
 import { getAuthorization } from '@/utils';
 import type { Link } from '@/api/api';
+import { SortingType } from '@/components/helpers/sort-by';
+
+export interface Sort {
+  target: SortingType | undefined;
+  short: SortingType | undefined;
+  counter: SortingType | undefined;
+}
 
 export interface State {
   link: string;
   short: string;
   statistics: Link[];
-  offset: 0;
+  offset: number;
+  offsetError: boolean;
   inProcess: boolean;
   hasMore: boolean;
+  sort: Sort;
 }
 
-const LIMIT = 4;
+type SortingFields = keyof Sort;
+
+const LIMIT = 8;
 
 const state = reactive<State>({
   link: '',
   short: '',
   statistics: [],
   offset: 0,
+  offsetError: false,
   inProcess: true,
   hasMore: true,
+  sort: {
+    target: undefined,
+    short: undefined,
+    counter: undefined,
+  },
 });
 
 onMounted(() => {
-  loadMore();
+  loadPage();
 });
 
 async function getShort(): Promise<void> {
@@ -130,13 +184,56 @@ async function getShort(): Promise<void> {
   }
 }
 
-async function loadMore(): Promise<void> {
+type OrderTypes =
+  | 'asc_counter'
+  | 'desc_counter'
+  | 'asc_short'
+  | 'asc_target'
+  | 'desc_short'
+  | 'desc_target';
+
+async function loadPage(): Promise<void> {
   const authorisation = getAuthorization();
 
+  function getSortParams(): OrderTypes[] {
+    const params: OrderTypes[] = [];
+
+    if (state.sort.counter) {
+      if (state.sort.counter === SortingType.ASC) {
+        params.push('asc_counter');
+      }
+      if (state.sort.counter === SortingType.DESC) {
+        params.push('desc_counter');
+      }
+    }
+
+    if (state.sort.target) {
+      if (state.sort.target === SortingType.ASC) {
+        params.push('asc_target');
+      }
+      if (state.sort.target === SortingType.DESC) {
+        params.push('desc_target');
+      }
+    }
+
+    if (state.sort.short) {
+      if (state.sort.short === SortingType.ASC) {
+        params.push('asc_short');
+      }
+      if (state.sort.short === SortingType.DESC) {
+        params.push('desc_short');
+      }
+    }
+
+    return params;
+  }
+
   if (authorisation) {
+    const order = getSortParams();
+
     try {
       const response = await api.statisticsStatisticsGet(
-        { limit: LIMIT, offset: state.offset * LIMIT },
+        { limit: LIMIT, offset: state.offset * LIMIT, order },
         {
           headers: {
             Authorization: authorisation,
@@ -144,11 +241,9 @@ async function loadMore(): Promise<void> {
         }
       );
 
-      state.statistics = [...state.statistics, ...response.data];
+      state.statistics = response.data;
 
-      if (response.data.length === LIMIT) {
-        state.offset++;
-      } else {
+      if (response.data.length < LIMIT) {
         state.hasMore = false;
       }
     } catch (err) {
@@ -156,6 +251,18 @@ async function loadMore(): Promise<void> {
     } finally {
       state.inProcess = false;
     }
+  }
+}
+
+function changeSortingParams(field: SortingFields) {
+  const type = state.sort[field];
+
+  if (type === SortingType.ASC) {
+    state.sort[field] = SortingType.DESC;
+  } else if (type === SortingType.DESC) {
+    state.sort[field] = undefined;
+  } else {
+    state.sort[field] = SortingType.ASC;
   }
 }
 
@@ -172,9 +279,17 @@ function makeLinkFromShort(short: string): string {
 }
 
 watch(
-  () => [...state.link],
+  () => [state.link],
   () => {
     state.short = '';
+  }
+);
+
+watch(
+  () => [state.offset, {...state.sort}],
+  () => {
+    state.inProcess = true;
+    loadPage();
   }
 );
 </script>
