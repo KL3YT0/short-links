@@ -10,8 +10,13 @@ export default defineConfig({
   plugins: [vue(), Unocss({
     theme: {
       colors: {
-        primary: '#133d29',
-        secondary: '#803760'
+        primary: '#99CCFF',
+        secondary: '#17804b',
+
+        red: '#CC0000',
+        gray: '#666666',
+        white: '#FFFFFF'
+
       }
     }
   })],

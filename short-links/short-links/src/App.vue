@@ -2,8 +2,9 @@
 import { RouterView } from 'vue-router';
 import { api } from '@/api';
 import { onMounted } from 'vue';
+import TheHeader from './components/layouts/TheHeader.vue';
 
-onMounted(() => {
+/* onMounted(() => {
   getShortLink();
 });
 
@@ -13,9 +14,18 @@ async function getShortLink(): Promise<void> {
   });
   console.log(response.data);
   //
-}
+} */
 </script>
 
 <template>
-  <RouterView />
+  <TheHeader/>
+  <main class="max-w-[80%] w-full mx-auto">
+    <RouterView />
+  </main>
 </template>
+
+<style>
+  @import '@/assets/reset.css';
+  @import '@/assets/app.css';
+  </style>
+  
