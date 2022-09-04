@@ -52,10 +52,7 @@
             @click="changeSortingParams('short')"
             class="flex items-center gap-x-4 break-all col-span-2 p-2"
           >
-            <SortBy
-              :sorting-type="state.sort.short"
-              label="Короткая ссылка"
-            />
+            <SortBy :sorting-type="state.sort.short" label="Короткая ссылка" />
           </div>
 
           <div
@@ -89,9 +86,7 @@
           <div class="w-35 mx-auto">
             <TheButton
               @click="state.offset--"
-              :disabled="
-                state.inProcess || state.offset === 0
-              "
+              :disabled="state.inProcess || state.offset === 0"
               label="Предыдущая страница"
               variant="primary"
             />
@@ -122,6 +117,7 @@ import { TheInput, TheButton, SortBy } from '@/components/helpers';
 import { getAuthorization } from '@/utils';
 import type { Link } from '@/api/api';
 import { SortingType } from '@/components/helpers/sort-by';
+import { createNotification } from '@/components/helpers/notification';
 
 export interface Sort {
   target: SortingType | undefined;
@@ -269,6 +265,7 @@ function changeSortingParams(field: SortingFields) {
 async function copyToClipboard(value: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(value);
+    createNotification('Ссылка скопирована в буфер обмена');
   } catch (err) {
     console.log(err);
   }
@@ -286,7 +283,7 @@ watch(
 );
 
 watch(
-  () => [state.offset, {...state.sort}],
+  () => [state.offset, { ...state.sort }],
   () => {
     state.inProcess = true;
     loadPage();
