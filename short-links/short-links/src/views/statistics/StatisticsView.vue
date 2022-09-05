@@ -85,7 +85,7 @@
         <div class="flex">
           <div class="w-35 mx-auto">
             <TheButton
-              @click="state.offset--, state.hasMore = true"
+              @click="state.offset--, (state.hasMore = true)"
               :disabled="state.inProcess || state.offset === 0"
               label="Предыдущая страница"
               variant="primary"
@@ -136,6 +136,14 @@ export interface State {
   sort: Sort;
 }
 
+type OrderTypes =
+  | 'asc_counter'
+  | 'desc_counter'
+  | 'asc_short'
+  | 'asc_target'
+  | 'desc_short'
+  | 'desc_target';
+
 type SortingFields = keyof Sort;
 
 const LIMIT = 8;
@@ -182,14 +190,6 @@ async function getShort(): Promise<void> {
   }
 }
 
-type OrderTypes =
-  | 'asc_counter'
-  | 'desc_counter'
-  | 'asc_short'
-  | 'asc_target'
-  | 'desc_short'
-  | 'desc_target';
-
 async function loadPage(): Promise<void> {
   const authorisation = getAuthorization();
 
@@ -197,30 +197,21 @@ async function loadPage(): Promise<void> {
     const params: OrderTypes[] = [];
 
     if (state.sort.counter) {
-      if (state.sort.counter === SortingType.ASC) {
-        params.push('asc_counter');
-      }
-      if (state.sort.counter === SortingType.DESC) {
-        params.push('desc_counter');
-      }
+      params.push(
+        state.sort.counter === SortingType.ASC ? 'asc_counter' : 'desc_counter'
+      );
     }
 
     if (state.sort.target) {
-      if (state.sort.target === SortingType.ASC) {
-        params.push('asc_target');
-      }
-      if (state.sort.target === SortingType.DESC) {
-        params.push('desc_target');
-      }
+      params.push(
+        state.sort.target === SortingType.ASC ? 'asc_target' : 'desc_target'
+      );
     }
 
     if (state.sort.short) {
-      if (state.sort.short === SortingType.ASC) {
-        params.push('asc_short');
-      }
-      if (state.sort.short === SortingType.DESC) {
-        params.push('desc_short');
-      }
+      params.push(
+        state.sort.short === SortingType.ASC ? 'asc_short' : 'desc_short'
+      );
     }
 
     return params;
